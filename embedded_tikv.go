@@ -21,6 +21,7 @@ package embeddedtikv
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -29,14 +30,6 @@ import (
 	"sync"
 	"time"
 )
-
-// startAttempts bounds retries when a server loses a race for one of its ports. Ports are
-// allocated by binding to :0 and closing, so another process on the machine can always take one
-// in the gap before the server binds it.
-const startAttempts = 3
-
-// shutdownTimeout is how long each server is given to exit on SIGTERM before being killed.
-const shutdownTimeout = 10 * time.Second
 
 // Cluster is the lifecycle handle for one embedded TiKV cluster. Start and Stop are safe to
 // call concurrently; independent Cluster values are fully independent.
@@ -84,6 +77,14 @@ func (c *Cluster) Start() error {
 	return c.start()
 }
 
+// ErrClusterAlreadyStarted is returned by Start when the cluster is already running.
+var ErrClusterAlreadyStarted = errors.New("embedded-tikv: cluster has already started")
+
+// startAttempts bounds retries when a server loses a race for one of its ports. Ports are
+// allocated by binding to :0 and closing, so another process on the machine can always take one
+// in the gap before the server binds it.
+const startAttempts = 3
+
 func (c *Cluster) start() error {
 	if c.started {
 		return ErrClusterAlreadyStarted
@@ -112,7 +113,7 @@ func (c *Cluster) start() error {
 
 	var lastErr error
 
-	for attempt := 0; attempt < startAttempts; attempt++ {
+	for range startAttempts {
 		lastErr = c.startOnce()
 		if lastErr == nil {
 			c.started = true
@@ -309,6 +310,9 @@ func (c *Cluster) processes() []*process {
 	return procs
 }
 
+// ErrClusterNotStarted is returned by Stop when there is nothing to stop.
+var ErrClusterNotStarted = errors.New("embedded-tikv: cluster has not been started")
+
 // Stop shuts the cluster down and, unless DataPath was set explicitly, removes its data
 // directory.
 func (c *Cluster) Stop() error {
@@ -331,6 +335,9 @@ func (c *Cluster) Stop() error {
 
 	return err
 }
+
+// shutdownTimeout is how long each server is given to exit on SIGTERM before being killed.
+const shutdownTimeout = 10 * time.Second
 
 // teardown stops every server and clears per-attempt state. It is used both by Stop and to
 // clean up after a failed start, so it must tolerate partially constructed clusters.
