@@ -30,15 +30,20 @@ jobs:
             examples/go.sum
             smoketest/go.sum
 
-      # pd-server and tikv-server are ~487 MB on linux, downloaded by the first
-      # test that starts a cluster. The key is the file holding the version
-      # constants; the restore-key is what matters day to day, since config.go
-      # changes for unrelated reasons far more often than the version does and a
-      # near-miss should still reuse the binaries rather than refetch them.
-      - name: Cache TiKV binaries
-        uses: actions/cache@v6
+      # pd-server and tikv-server are ~630 MB on linux, downloaded by the first
+      # test that starts a cluster. Only bin/ is cached: its sibling run/ is the
+      # orphan registry, which is per-machine, rewritten constantly, and worth
+      # nothing on a fresh runner.
+      #
+      # The key is the file holding the version constants; the restore-key is
+      # what matters day to day, since config.go changes for unrelated reasons
+      # far more often than the version does and a near-miss should still reuse
+      # the binaries rather than refetch them.
+      - name: Restore TiKV binaries
+        id: tikv-binaries
+        uses: actions/cache/restore@v6
         with:
-          path: ~/.embedded-tikv
+          path: ~/.embedded-tikv/bin
           key: embedded-tikv-${{ runner.os }}-${{ hashFiles('config.go') }}
           restore-keys: |
             embedded-tikv-${{ runner.os }}-
@@ -49,3 +54,14 @@ jobs:
       # time, which a two-core runner does not have the headroom for.
       - name: Test
         run: go test -race -v -timeout 20m -p 1 ./... ./examples/... ./smoketest/...
+
+      # Saved even when the tests failed. A red build is exactly when CI is about
+      # to run again, and the download is the expensive part of the job whether
+      # or not the code was correct. Skipped on an exact key hit, which would be
+      # a duplicate save rather than a new entry.
+      - name: Save TiKV binaries
+        if: always() && steps.tikv-binaries.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ~/.embedded-tikv/bin
+          key: embedded-tikv-${{ runner.os }}-${{ hashFiles('config.go') }}
