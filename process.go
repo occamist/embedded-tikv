@@ -104,6 +104,21 @@ func (p *process) exited() bool {
 	}
 }
 
+// exitReason describes how a server that has already exited terminated, for quoting back in a
+// start-up error. Only meaningful once exited reports true.
+//
+// A server that exits cleanly during start-up has still failed, but cmd.Wait reports that as a
+// nil error, which would reach the caller as "<nil>". The phrasing here is exec.ExitError's own,
+// so that the clean case reads as the neighbouring value of the same field rather than as a
+// separate kind of outcome: "exit status 0" beside "exit status 1".
+func (p *process) exitReason() string {
+	if p.waitErr == nil {
+		return "exit status 0"
+	}
+
+	return p.waitErr.Error()
+}
+
 // stop asks the server to shut down cleanly, escalating to SIGKILL if it outstays timeout.
 func (p *process) stop(timeout time.Duration) error {
 	if p == nil {

@@ -271,7 +271,7 @@ func (c *Cluster) watchdogCleanupPaths() watchdogCleanup {
 func (c *Cluster) aliveGuard() error {
 	for _, proc := range c.processes() {
 		if proc.exited() {
-			return fmt.Errorf("%s exited during startup: %v\n--- %s output ---\n%s", proc.name, proc.waitErr, proc.name, proc.logTail())
+			return fmt.Errorf("%s exited during startup: %s\n--- %s output ---\n%s", proc.name, proc.exitReason(), proc.name, proc.logTail())
 		}
 	}
 

@@ -61,6 +61,29 @@ func TestStartSurfacesServerOutputOnFailure(t *testing.T) {
 	}
 }
 
+func TestStartReportsCleanExitLegibly(t *testing.T) {
+	// A server that exits 0 during start-up has still failed, and cmd.Wait reports nothing.
+	// That nil must not reach the caller formatted as "<nil>".
+	directory := stubBinaries(t, "#!/bin/sh\necho 'nothing to do' >&2\nexit 0\n")
+
+	cluster := New(DefaultConfig().
+		BinariesPath(directory).
+		DataPath(t.TempDir()))
+
+	err := cluster.Start()
+	if err == nil {
+		t.Fatal("expected a start failure")
+	}
+
+	if !strings.Contains(err.Error(), "pd-0 exited during startup: exit status 0") {
+		t.Errorf("clean exit is not described:\n%v", err)
+	}
+
+	if strings.Contains(err.Error(), "<nil>") {
+		t.Errorf("nil wait error leaked into the message:\n%v", err)
+	}
+}
+
 func TestStartWritesConfigFilesServersCanRead(t *testing.T) {
 	// A server that exits immediately is enough to get the config written to disk.
 	directory := stubBinaries(t, "#!/bin/sh\nexit 0\n")
