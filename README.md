@@ -1,5 +1,10 @@
 # embedded-tikv
 
+[![Version](https://img.shields.io/github/tag/occamist/embedded-tikv.svg)](https://github.com/occamist/embedded-tikv/tags)
+[![CI Build](https://github.com/occamist/embedded-tikv/actions/workflows/test.yaml/badge.svg)](https://github.com/occamist/embedded-tikv/actions/workflows/test.yaml)
+[![GoDoc](https://godoc.org/github.com/occamist/embedded-tikv?status.svg)](https://godoc.org/github.com/occamist/embedded-tikv)
+[![License](https://img.shields.io/github/license/occamist/embedded-tikv)](https://github.com/occamist/embedded-tikv/blob/main/LICENSE)
+
 Run a real [TiKV](https://tikv.org) cluster from your Go tests.
 
 It is inspired by [`embedded-postgres`](https://github.com/fergusstrange/embedded-postgres),
