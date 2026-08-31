@@ -1,9 +1,3 @@
-// Package smoke_test is the minimal end-to-end check that the whole path works, and is what CI
-// runs on every supported OS and architecture.
-//
-// It is a separate module so it can be run against a published version of the library, and it
-// deliberately does the smallest possible thing: prove that the downloaded binaries execute on
-// this platform and that a write reaches storage.
 package smoke_test
 
 import (
