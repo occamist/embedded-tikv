@@ -9,8 +9,6 @@ import (
 	"github.com/tikv/client-go/v2/txnkv"
 )
 
-// TestTxnKVCommit exercises the transactional API, which unlike RawKV needs PD to be serving
-// timestamps — a stricter check that the cluster is fully up.
 func TestTxnKVCommit(t *testing.T) {
 	cluster := embeddedtikv.New()
 

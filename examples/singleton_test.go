@@ -13,8 +13,6 @@ import (
 
 var cluster *embeddedtikv.Cluster
 
-// TestMain governs every test in the package, so the shared cluster is started even for the
-// per-test examples that build their own. That is the cost of the pattern, not a mistake.
 func TestMain(m *testing.M) {
 	cluster = embeddedtikv.New()
 

@@ -9,8 +9,6 @@ import (
 	"github.com/tikv/client-go/v2/rawkv"
 )
 
-// TestRawKVRoundTrip is the end-to-end proof that Start returns a cluster which is genuinely
-// writable, not merely one whose processes are running.
 func TestRawKVRoundTrip(t *testing.T) {
 	cluster := embeddedtikv.New()
 
