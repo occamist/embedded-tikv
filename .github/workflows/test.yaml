@@ -1,0 +1,67 @@
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+# Every run boots real TiKV clusters and may pull ~487 MB, so superseded runs on
+# the same branch are not worth finishing.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Go
+        uses: actions/setup-go@v7
+        with:
+          go-version: "1.26.x"
+          # One go.sum per module in the workspace. Without all three, the module
+          # cache key ignores what examples and smoketest depend on.
+          cache-dependency-path: |
+            go.sum
+            examples/go.sum
+            smoketest/go.sum
+
+      # pd-server and tikv-server are ~630 MB on linux, downloaded by the first
+      # test that starts a cluster. Only bin/ is cached: its sibling run/ is the
+      # orphan registry, which is per-machine, rewritten constantly, and worth
+      # nothing on a fresh runner.
+      #
+      # The key is the file holding the version constants; the restore-key is
+      # what matters day to day, since config.go changes for unrelated reasons
+      # far more often than the version does and a near-miss should still reuse
+      # the binaries rather than refetch them.
+      - name: Restore TiKV binaries
+        id: tikv-binaries
+        uses: actions/cache/restore@v6
+        with:
+          path: ~/.embedded-tikv/bin
+          key: embedded-tikv-${{ runner.os }}-${{ hashFiles('config.go') }}
+          restore-keys: |
+            embedded-tikv-${{ runner.os }}-
+
+      # A Go workspace does not fan a pattern out across its modules: ./... from
+      # the root matches the root module alone, so examples and smoketest have to
+      # be named. -p 1 keeps the three from booting their clusters at the same
+      # time, which a two-core runner does not have the headroom for.
+      - name: Test
+        run: go test -race -v -timeout 20m -p 1 ./... ./examples/... ./smoketest/...
+
+      # Saved even when the tests failed. A red build is exactly when CI is about
+      # to run again, and the download is the expensive part of the job whether
+      # or not the code was correct. Skipped on an exact key hit, which would be
+      # a duplicate save rather than a new entry.
+      - name: Save TiKV binaries
+        if: always() && steps.tikv-binaries.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ~/.embedded-tikv/bin
+          key: embedded-tikv-${{ runner.os }}-${{ hashFiles('config.go') }}
