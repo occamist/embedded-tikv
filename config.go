@@ -10,8 +10,9 @@ import (
 // TiKVVersion is the release tag shared by the tikv-server and pd-server binaries.
 type TiKVVersion string
 
-// Predefined TiKV versions, one per upstream long-term-support line. Any tag published on the
-// mirror works; these are simply the ones known to be paired across both components.
+// Predefined TiKV versions, one per upstream long-term-support (LTS) line.
+// https://docs.pingcap.com/tidb/stable/ if LTS versions get patch updates, do update below
+// and double-check against `curl -s "https://api.github.com/repos/tikv/tikv/releases?per_page=100" | grep -o '"tag_name": "[^"]*"' | sort -V`
 const (
 	V8_5 = TiKVVersion("v8.5.8")
 	V8_1 = TiKVVersion("v8.1.2")
